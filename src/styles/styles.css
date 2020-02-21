@@ -1,0 +1,27 @@
+.nav {
+    background: #333;
+}
+
+.nav h3 {
+    margin: 2rem auto !important;
+}
+
+button {
+    background: #333;
+    margin-bottom: 20px;
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.6rem;
+    color: #fff;
+    border: 0;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button.active {
+    background: #00bfa5;
+}
+
+form span {
+    color: #00bfa5;
+}
