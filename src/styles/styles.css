@@ -29,3 +29,22 @@ form span {
 #monitor {
     display: none;
 }
+
+/* .x-axis path, .y-axis path, .x-axis line, .y-axis line {
+    stroke: #ccc;
+}
+
+.x-axis text, .y-axis text {
+    stroke: #ccc;
+    font-size: 0.85rem;
+} */
+
+.x-axis, .y-axis {
+    color: #ccc;
+    font-size: 0.85rem;
+}
+
+.x-axis .tick text {
+    transform: rotate(-40deg) translate(0, 5px);
+    text-anchor: end;
+}

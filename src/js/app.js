@@ -1,5 +1,5 @@
 const app = {
-    // Properties
+    // Form properties
     buttons: document.getElementsByTagName('button'),
     form: document.querySelector('form'),
     formTitle: document.querySelector('form span'),
@@ -7,7 +7,16 @@ const app = {
     monitor: document.getElementById('monitor'),
     activity: 'activity-1',
     data: [],
-
+    // Graph properties
+    dims: null,
+    svg: null,
+    graph: null,
+    x: null,
+    y: null,
+    xAxisGroup: null,
+    yAxisGroup: null,
+    xAxis: null,
+    yAxis: null,
 
     // App init
     init: function() {
@@ -17,6 +26,8 @@ const app = {
         }
         // Form submit listener
         app.form.addEventListener('submit', app.handleSubmit);
+        // Init graph configuration
+        app.initGraphConfig();
         // Init Firebase listener
         db.collection('activities').onSnapshot((snapshot) => {
             snapshot.docChanges().forEach(change => {
@@ -27,12 +38,11 @@ const app = {
                 // Refresh local data
                 app.refreshData(doc, changeType);
             });
-            // app.update(app.data);
-            console.log(app.data);
+            app.update(app.data);
         });
     },
 
-    // Methods
+    // Methods: Form
     handleSelection: function(evt) {
         // Catch actiity selection
         app.activity = evt.target.getAttribute('data-activity');
@@ -72,6 +82,93 @@ const app = {
             app.monitor.style.display = "none";
             app.form.reset();
         }, 2000)
+    },
+
+    // Methods: Grpah
+    initGraphConfig: function () {
+        // Dimensions
+        app.dims = {
+            marginTop: 40,
+            marginRight: 20,
+            marginBottom: 50,
+            marginLeft: 100,
+            svgWidth: 560,
+            svgHeight: 400
+        },
+
+        app.dims.graphWidth = 560 - app.dims.marginLeft - app.dims.marginRight,
+        app.dims.graphHeight = 400 - app.dims.marginTop - app.dims.marginBottom
+
+        // Containers settings
+        app.svg = d3.select('.canvas')
+            .append('svg')
+            .attr('width', app.dims.svgWidth)
+            .attr('height', app.dims.svgHeight);
+        
+        app.graph = app.svg.append('g')
+            .attr('width', app.dims.graphWidth)
+            .attr('height', app.dims.graphHeight)
+            .attr('transform', `translate(${app.dims.marginLeft}, ${app.dims.marginTop})`);
+
+        // Scales
+        app.x = d3.scaleTime()
+            .range([0, app.dims.graphWidth]);
+        
+        app.y = d3.scaleLinear()
+            .range([app.dims.graphHeight, 0]);
+
+        // Axis group
+        app.xAxisGroup = app.graph.append('g')
+            .attr('class', 'x-axis')
+            .attr('transform', `translate(0, ${app.dims.graphHeight})`);
+        
+        app.yAxisGroup = app.graph.append('g')
+            .attr('class', 'y-axis');
+    },
+
+    update: function(data) {
+        console.log(data);
+        // Update scale domain
+        const minTime = d3.min(app.data, d => new Date(d.date));
+        const maxTime = d3.max(app.data, d => new Date(d.date));
+        console.log(minTime, maxTime)
+        app.x.domain([minTime, maxTime]);
+
+        const maxValue = d3.max(app.data, d => d.value);
+        app.y.domain([0, maxValue]);
+        console.log(maxValue)
+
+        // Create and call axis
+        app.xAxis = d3.axisBottom(app.x)
+            // .ticks(4)
+            .tickFormat(d3.timeFormat('%b %d'));
+        app.yAxis = d3.axisLeft(app.y)
+            // .ticks(4)
+            .tickFormat(d => `${d} $`)
+        app.xAxisGroup.call(app.xAxis);
+        app.yAxisGroup.call(app.yAxis);
+
+        // Join data to circle element
+        const circles = app.graph.selectAll('circle').data(data);
+
+        // D3.js update pattern
+        circles
+            .attr('r', 4)
+            .attr('cx', d => app.x(new Date(d.date)))
+            .attr('cy', d => d.value)
+            .attr('fill', '#ccc');
+
+        circles
+            .enter()
+            .append('circle')
+                .attr('r', 4)
+                .attr('cx', d => app.x(new Date(d.date)))
+                .attr('cy', d => d.value)
+                .attr('fill', '#ccc');
+
+        circles
+            .exit()
+            .remove()
     },
 
     // CRUD operation
