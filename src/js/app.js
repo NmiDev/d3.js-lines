@@ -18,6 +18,9 @@ const app = {
     xAxis: null,
     yAxis: null,
     line: null,
+    dottedLineGroup: null,
+    xDottedLine: null,
+    yDottedLine: null,
 
     // App init
     init: function() {
@@ -130,6 +133,21 @@ const app = {
         app.line = d3.line()
             .x(d => app.xScale(new Date(d.date)))
             .y(d => app.yScale(d.value));
+
+        // Dotted line group and elements
+        app.dottedLineGroup = app.graph.append('g');
+
+        app.xDottedLine = app.dottedLineGroup.append('line')
+            .style('stroke-dasharray', 4)
+            .style('opacity', 0)
+            .attr('stroke', '#aaa')
+            .attr('stroke-width', 2);
+
+        app.yDottedLine = app.dottedLineGroup.append('line')
+            .style('stroke-dasharray', 4)
+            .style('opacity', 0)
+            .attr('stroke', '#aaa')
+            .attr('stroke-width', 2);
     },
 
     updateGraph: function(data) {
@@ -141,7 +159,7 @@ const app = {
         app.xScale.domain([minTime, maxTime]);
 
         const maxValue = d3.max(filteredData, d => d.value);
-        app.yScale.domain([0, maxValue + 10]);
+        app.yScale.domain([0, maxValue]);
 
         // Create and call axis
         app.xAxis = d3.axisBottom(app.xScale)
@@ -169,7 +187,9 @@ const app = {
                 .attr('r', 4)
                 .attr('cx', d => app.xScale(new Date(d.date)))
                 .attr('cy', d => app.yScale(d.value))
-                .attr('fill', '#ccc');
+                .attr('fill', '#ccc')
+                .on('mouseover', app.handleMouseOver)
+                .on('mouseout', app.handleMouseOut);
 
         circles
             .exit()
@@ -205,6 +225,42 @@ const app = {
         lines
             .exit()
             .remove()
+    },
+
+    handleMouseOver: function (d, i, n) {
+        d3.select(n[i])
+            .transition()
+            .duration(100)
+            .attr('r', 8)
+            .attr('fill','#fff');
+
+        app.xDottedLine
+            .attr('x1', 0)
+            .attr('x2', app.xScale(new Date(d.date)))
+            .attr('y1', app.yScale(d.value))
+            .attr('y2', app.yScale(d.value))
+            .style('opacity', 1);
+
+        app.yDottedLine
+            .attr('x1', app.xScale(new Date(d.date)))
+            .attr('x2', app.xScale(new Date(d.date)))
+            .attr('y1', app.dims.graphHeight)
+            .attr('y2', app.yScale(d.value))
+            .style('opacity', 1);
+    },
+
+    handleMouseOut: function (d, i, n) {
+        d3.select(n[i])
+            .transition()
+            .duration(100)
+            .attr('r', 4)
+            .attr('fill','#ccc');
+
+        app.xDottedLine
+            .style('opacity', 0);
+
+        app.yDottedLine
+            .style('opacity', 0);
     },
 
     // CRUD operation
