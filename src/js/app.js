@@ -11,8 +11,8 @@ const app = {
     dims: null,
     svg: null,
     graph: null,
-    x: null,
-    y: null,
+    xScale: null,
+    yScale: null,
     xAxisGroup: null,
     yAxisGroup: null,
     xAxis: null,
@@ -52,10 +52,10 @@ const app = {
         }
 
         evt.target.classList.add('active');
-        // // Set ID for input field
-        // app.input.id = app.activity;
         // Set form title
         app.formTitle.textContent = evt.target.textContent;
+        // Refresh graph
+        app.update(app.data);
     },
     
     handleSubmit: function(evt) {
@@ -111,10 +111,10 @@ const app = {
             .attr('transform', `translate(${app.dims.marginLeft}, ${app.dims.marginTop})`);
 
         // Scales
-        app.x = d3.scaleTime()
+        app.xScale = d3.scaleTime()
             .range([0, app.dims.graphWidth]);
         
-        app.y = d3.scaleLinear()
+        app.yScale = d3.scaleLinear()
             .range([app.dims.graphHeight, 0]);
 
         // Axis group
@@ -127,43 +127,42 @@ const app = {
     },
 
     update: function(data) {
-        console.log(data);
+        // Filtering data
+        const filteredData = data.filter(item => item.activity === app.activity);
         // Update scale domain
-        const minTime = d3.min(app.data, d => new Date(d.date));
-        const maxTime = d3.max(app.data, d => new Date(d.date));
-        console.log(minTime, maxTime)
-        app.x.domain([minTime, maxTime]);
+        const minTime = d3.min(filteredData, d => new Date(d.date));
+        const maxTime = d3.max(filteredData, d => new Date(d.date));
+        app.xScale.domain([minTime, maxTime]);
 
-        const maxValue = d3.max(app.data, d => d.value);
-        app.y.domain([0, maxValue]);
-        console.log(maxValue)
+        const maxValue = d3.max(filteredData, d => d.value);
+        app.yScale.domain([0, maxValue + 10]);
 
         // Create and call axis
-        app.xAxis = d3.axisBottom(app.x)
-            // .ticks(4)
+        app.xAxis = d3.axisBottom(app.xScale)
+            .ticks(4)
             .tickFormat(d3.timeFormat('%b %d'));
-        app.yAxis = d3.axisLeft(app.y)
-            // .ticks(4)
+        app.yAxis = d3.axisLeft(app.yScale)
+            .ticks(4)
             .tickFormat(d => `${d} $`)
         app.xAxisGroup.call(app.xAxis);
         app.yAxisGroup.call(app.yAxis);
 
         // Join data to circle element
-        const circles = app.graph.selectAll('circle').data(data);
+        const circles = app.graph.selectAll('circle').data(filteredData);
 
         // D3.js update pattern
         circles
             .attr('r', 4)
-            .attr('cx', d => app.x(new Date(d.date)))
-            .attr('cy', d => d.value)
+            .attr('cx', d => app.xScale(new Date(d.date)))
+            .attr('cy', d => app.yScale(d.value))
             .attr('fill', '#ccc');
 
         circles
             .enter()
             .append('circle')
                 .attr('r', 4)
-                .attr('cx', d => app.x(new Date(d.date)))
-                .attr('cy', d => d.value)
+                .attr('cx', d => app.xScale(new Date(d.date)))
+                .attr('cy', d => app.yScale(d.value))
                 .attr('fill', '#ccc');
 
         circles
