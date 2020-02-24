@@ -17,6 +17,7 @@ const app = {
     yAxisGroup: null,
     xAxis: null,
     yAxis: null,
+    line: null,
 
     // App init
     init: function() {
@@ -38,7 +39,7 @@ const app = {
                 // Refresh local data
                 app.refreshData(doc, changeType);
             });
-            app.update(app.data);
+            app.updateGraph(app.data);
         });
     },
 
@@ -55,7 +56,7 @@ const app = {
         // Set form title
         app.formTitle.textContent = evt.target.textContent;
         // Refresh graph
-        app.update(app.data);
+        app.updateGraph(app.data);
     },
     
     handleSubmit: function(evt) {
@@ -124,10 +125,15 @@ const app = {
         
         app.yAxisGroup = app.graph.append('g')
             .attr('class', 'y-axis');
+
+        // Line path generator
+        app.line = d3.line()
+            .x(d => app.xScale(new Date(d.date)))
+            .y(d => app.yScale(d.value));
     },
 
-    update: function(data) {
-        // Filtering data
+    updateGraph: function(data) {
+        // Filtering data by activity
         const filteredData = data.filter(item => item.activity === app.activity);
         // Update scale domain
         const minTime = d3.min(filteredData, d => new Date(d.date));
@@ -150,7 +156,7 @@ const app = {
         // Join data to circle element
         const circles = app.graph.selectAll('circle').data(filteredData);
 
-        // D3.js update pattern
+        // Update circles
         circles
             .attr('r', 4)
             .attr('cx', d => app.xScale(new Date(d.date)))
@@ -167,6 +173,37 @@ const app = {
 
         circles
             .exit()
+            .remove();
+
+        // Update lines
+        app.updateLine(filteredData);
+    },
+
+    updateLine: function(data) {
+        // Sorted data by date
+        const sortedData = _.sortBy(data, [d => new Date(d.date)]);
+        // Join data to circle element
+        const lines = app.graph.selectAll('.line').data([sortedData]);
+
+        // D3.js update pattern
+        lines
+            .attr('class', 'line')
+            .attr('d', app.line)
+            .attr('stroke', '#00bfa5')
+            .attr('stroke-width', 1)
+            .attr('fill', 'none');
+            
+        lines
+            .enter()
+            .append('path')
+            .attr('class', 'line')
+            .attr('d', app.line)
+            .attr('stroke', '#00bfa5')
+            .attr('stroke-width', 1)
+            .attr('fill', 'none');
+            
+        lines
+            .exit()
             .remove()
     },
 
@@ -180,7 +217,7 @@ const app = {
             case 'modified':
                 app.data.forEach((element, index) => {
                     if (element.id === doc.id) {
-                        data[index] = doc;
+                        app.data[index] = doc;
                     }
                 })
                 break;
